@@ -154,3 +154,16 @@ filewrite(struct file *f, char *addr, int n)
   panic("filewrite");
 }
 
+int
+filesymlink(const char *oldpath, const char *newpath)
+{
+  // TODO ...
+  return 0;
+}
+
+int
+filereadlink(const char *pathname, char *buf, int bufsize)
+{
+  // TODO ...
+  return 0;
+}
