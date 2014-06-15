@@ -361,8 +361,19 @@ sys_chdir(void)
   char *path;
   struct inode *ip;
 
-  if(argstr(0, &path) < 0 || (ip = namei(path)) == 0)
+  char final_path[MAXPATH];
+
+  if(argstr(0, &path) < 0)
     return -1;
+
+  if(filereadlink(path, final_path, MAXPATH) < 0){
+    return -1;
+  }
+
+  if((ip = namei(final_path)) == 0){
+    return -1;
+  }
+
   ilock(ip);
   if(ip->type != T_DIR){
     iunlockput(ip);
