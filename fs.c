@@ -696,8 +696,6 @@ nameiparent(char *path, char *name)
   return namex(path, 1, name);
 }
 
-#define MAXPATH 256
-
 int
 filereadlink(const char *pathname, char *buf, int bufsiz)
 {
