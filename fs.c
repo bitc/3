@@ -215,6 +215,7 @@ iupdate(struct inode *ip)
   dip->size = ip->size;
   memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
   dip->indirect2 = ip->indirect2;
+  memmove(dip->password, ip->password, sizeof(ip->password));
   log_write(bp);
   brelse(bp);
 }
@@ -293,6 +294,7 @@ ilock(struct inode *ip)
     ip->size = dip->size;
     memmove(ip->addrs, dip->addrs, sizeof(ip->addrs));
     ip->indirect2 = dip->indirect2;
+    memmove(ip->password, dip->password, sizeof(ip->password));
     brelse(bp);
     ip->flags |= I_VALID;
     if(ip->type == 0)

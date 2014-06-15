@@ -22,6 +22,7 @@ struct superblock {
 #define NDIRECT 12
 #define NINDIRECT (BSIZE / sizeof(uint))
 #define MAXFILE (NDIRECT + NINDIRECT + (NINDIRECT * NINDIRECT))
+#define PASSLEN 10
 
 // On-disk inode structure
 struct dinode {
@@ -33,7 +34,8 @@ struct dinode {
   uint addrs[NDIRECT+1];   // Data block addresses
   uint indirect2;       // Double indirection layer (Adds additional 8MB)
 
-  char padding[60];     // Unused. Pads the size of the struct to 128 bytes
+  char password[PASSLEN];    // Password for locking files
+  char padding[50];     // Unused. Pads the size of the struct to 128 bytes
 };
 
 // Inodes per block.
