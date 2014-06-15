@@ -23,6 +23,20 @@ fmtname(char *path)
   return buf;
 }
 
+static int
+stat2(char *n, struct stat *st)
+{
+  int fd;
+  int r;
+
+  fd = open(n, O_RDONLY | O_IGNLINK);
+  if(fd < 0)
+    return -1;
+  r = fstat(fd, st);
+  close(fd);
+  return r;
+}
+
 void
 ls(char *path)
 {
@@ -31,7 +45,7 @@ ls(char *path)
   struct dirent de;
   struct stat st;
   
-  if((fd = open(path, O_IGNLINK)) < 0){
+  if((fd = open(path, 0)) < 0){
     printf(2, "ls: cannot open %s\n", path);
     return;
   }
@@ -60,7 +74,7 @@ ls(char *path)
         continue;
       memmove(p, de.name, DIRSIZ);
       p[DIRSIZ] = 0;
-      if(stat(buf, &st) < 0){
+      if(stat2(buf, &st) < 0){
         printf(1, "ls: cannot stat %s\n", buf);
         continue;
       }
