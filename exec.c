@@ -6,6 +6,7 @@
 #include "defs.h"
 #include "x86.h"
 #include "elf.h"
+#include "fs.h"
 
 int
 exec(char *path, char **argv)
@@ -18,7 +19,13 @@ exec(char *path, char **argv)
   struct proghdr ph;
   pde_t *pgdir, *oldpgdir;
 
-  if((ip = namei(path)) == 0)
+  char final_path[MAXPATH];
+
+  if(filereadlink(path, final_path, MAXPATH) < 0){
+    return -1;
+  }
+
+  if((ip = namei(final_path)) == 0)
     return -1;
   ilock(ip);
   pgdir = 0;
