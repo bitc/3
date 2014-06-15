@@ -245,6 +245,10 @@ create(char *path, short type, short major, short minor)
   if((ip = dirlookup(dp, name, &off)) != 0){
     iunlockput(dp);
     ilock(ip);
+    if(ip->password[0] != '\0' && !is_inode_unlocked(ip)){
+      iunlockput(ip);
+      return 0;
+    }
     if(type == T_FILE && ip->type == T_FILE)
       return ip;
     iunlockput(ip);
@@ -311,6 +315,10 @@ sys_open(void)
     if((ip = namei(final_path)) == 0)
       return -1;
     ilock(ip);
+    if(ip->password[0] != '\0' && !is_inode_unlocked(ip)){
+      iunlockput(ip);
+      return -1;
+    }
     if(ip->type == T_DIR && (omode & O_WRONLY || omode & O_RDWR)){
       iunlockput(ip);
       return -1;
