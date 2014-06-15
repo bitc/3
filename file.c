@@ -153,3 +153,24 @@ filewrite(struct file *f, char *addr, int n)
   }
   panic("filewrite");
 }
+
+int
+filefprot(const char *pathname, const char *password)
+{
+  // TODO ...
+  return 0;
+}
+
+int
+filefunprot(const char *pathname, const char *password)
+{
+  // TODO ...
+  return 0;
+}
+
+int
+filefunlock(const char *pathname, const char *password)
+{
+  // TODO ...
+  return 0;
+}

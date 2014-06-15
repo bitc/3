@@ -24,6 +24,9 @@ int sleep(int);
 int uptime(void);
 int symlink(const char*, const char*);
 int readlink(const char*, char*, int);
+int fprot(const char *pathname, const char *password);
+int funprot(const char *pathname, const char *password);
+int funlock(const char *pathname, const char *password);
 
 // ulib.c
 int stat(char*, struct stat*);

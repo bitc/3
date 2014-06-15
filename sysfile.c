@@ -504,3 +504,38 @@ filesymlink(const char *oldpath, const char *newpath)
   return 0;
 }
 
+int sys_fprot(void)
+{
+  char *pathname;
+  char *password;
+
+  if(argstr(0, &pathname) < 0 || argstr(1, &password) < 0){
+    return -1;
+  }
+
+  return filefprot(pathname, password);
+}
+
+int sys_funprot(void)
+{
+  char *pathname;
+  char *password;
+
+  if(argstr(0, &pathname) < 0 || argstr(1, &password) < 0){
+    return -1;
+  }
+
+  return filefunprot(pathname, password);
+}
+
+int sys_funlock(void)
+{
+  char *pathname;
+  char *password;
+
+  if(argstr(0, &pathname) < 0 || argstr(1, &password) < 0){
+    return -1;
+  }
+
+  return filefunlock(pathname, password);
+}

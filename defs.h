@@ -34,6 +34,9 @@ int             filewrite(struct file*, char*, int n);
 int             filesymlink(const char *oldpath, const char *newpath);
 int             filereadlink(const char *pathname, char *buf, int bufsiz);
 int             filereadlinki(const char *pathname, char *buf, int bufsiz);
+int             filefprot(const char *pathname, const char *password);
+int             filefunprot(const char *pathname, const char *password);
+int             filefunlock(const char *pathname, const char *password);
 
 // fs.c
 void            readsb(int dev, struct superblock *sb);
