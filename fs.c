@@ -163,10 +163,75 @@ struct {
   struct inode inode[NINODE];
 } icache;
 
+#define NINODES 200
+
+struct {
+  struct spinlock lock;
+  int pids[NINODES][NPROC];
+} unlocked_inodes;
+
+void unlock_inode(struct inode* ip)
+{
+  int i;
+  acquire(&unlocked_inodes.lock);
+  for(i = 0; i < NPROC; i++){
+    if(unlocked_inodes.pids[ip->inum][i] == proc->pid){
+      // The inode is already unlocked for this pid
+      release(&unlocked_inodes.lock);
+      return;
+    }
+  }
+
+  // The inode is not already unlocked, look for the first free slot
+  for(i = 0; i < NPROC; i++){
+    if(unlocked_inodes.pids[ip->inum][i] == 0){
+      // Found a free slot
+      unlocked_inodes.pids[ip->inum][i] = proc->pid;
+      release(&unlocked_inodes.lock);
+      return;
+    }
+  }
+  panic("unlock_inodes: No free pid slots found");
+}
+
+void free_inode_locks(int pid)
+{
+  int i, j;
+
+  acquire(&unlocked_inodes.lock);
+  for(i = 0; i < NINODES; i++){
+    for(j = 0; j < NPROC; j++){
+      if(unlocked_inodes.pids[i][j] == pid){
+        unlocked_inodes.pids[i][j] = 0;
+      }
+    }
+  }
+  release(&unlocked_inodes.lock);
+}
+
+int
+is_inode_unlocked(struct inode* ip)
+{
+  int i;
+
+  acquire(&unlocked_inodes.lock);
+
+  for(i = 0; i < NPROC; i++){
+    if(unlocked_inodes.pids[ip->inum][i] == proc->pid){
+      release(&unlocked_inodes.lock);
+      return 1;
+    }
+  }
+
+  release(&unlocked_inodes.lock);
+  return 0;
+}
+
 void
 iinit(void)
 {
   initlock(&icache.lock, "icache");
+  initlock(&unlocked_inodes.lock, "unlocked_inodes");
 }
 
 static struct inode* iget(uint dev, uint inum);

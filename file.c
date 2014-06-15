@@ -8,6 +8,7 @@
 #include "fs.h"
 #include "file.h"
 #include "spinlock.h"
+#include "stat.h"
 
 struct devsw devsw[NDEV];
 struct {
@@ -157,20 +158,108 @@ filewrite(struct file *f, char *addr, int n)
 int
 filefprot(const char *pathname, const char *password)
 {
-  // TODO ...
+  char final_path[MAXPATH];
+  struct inode* ip;
+
+  if(filereadlinki(pathname, final_path, MAXPATH) < 0){
+    return -1;
+  }
+
+  ip = namei(final_path);
+  if(!ip){
+    return -1;
+  }
+  ilock(ip);
+
+  if(ip->type != T_FILE){
+    // Not a file
+    iunlock(ip);
+    return -1;
+  }
+
+  if(ip->password[0] != '\0'){
+    // File already has a password
+    iunlock(ip);
+    return -1;
+  }
+
+  if(is_inode_open(ip)){
+    // File is already open by some process
+    iunlock(ip);
+    return -1;
+  }
+
+  safestrcpy(ip->password, password, PASSLEN);
+
+  iunlock(ip);
   return 0;
 }
 
 int
 filefunprot(const char *pathname, const char *password)
 {
-  // TODO ...
+  char final_path[MAXPATH];
+  struct inode* ip;
+
+  if(filereadlinki(pathname, final_path, MAXPATH) < 0){
+    return -1;
+  }
+
+  ip = namei(final_path);
+  if(!ip){
+    return -1;
+  }
+  ilock(ip);
+
+  if(ip->password[0] == '\0'){
+    // File has no password (is already unlocked)
+    iunlock(ip);
+    return 0;
+  }
+
+  if(strncmp(ip->password, password, PASSLEN) != 0){
+    // Password doesn't match
+    iunlock(ip);
+    return -1;
+  }
+
+  // Remove the password:
+  ip->password[0] = '\0';
+
+  iunlock(ip);
   return 0;
 }
 
 int
 filefunlock(const char *pathname, const char *password)
 {
-  // TODO ...
+  char final_path[MAXPATH];
+  struct inode* ip;
+
+  if(filereadlinki(pathname, final_path, MAXPATH) < 0){
+    return -1;
+  }
+
+  ip = namei(final_path);
+  if(!ip){
+    return -1;
+  }
+  ilock(ip);
+
+  if(ip->password[0] == '\0'){
+    // File has no password (is unlocked). This is considered an error
+    iunlock(ip);
+    return -1;
+  }
+
+  if(strncmp(ip->password, password, PASSLEN) != 0){
+    // Password doesn't match
+    iunlock(ip);
+    return -1;
+  }
+
+  unlock_inode(ip);
+
+  iunlock(ip);
   return 0;
 }

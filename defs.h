@@ -56,6 +56,9 @@ struct inode*   nameiparent(char*, char*);
 int             readi(struct inode*, char*, uint, uint);
 void            stati(struct inode*, struct stat*);
 int             writei(struct inode*, char*, uint, uint);
+void            free_inode_locks(int pid);
+void            unlock_inode(struct inode* ip);
+int             is_inode_unlocked(struct inode* ip);
 
 // ide.c
 void            ideinit(void);
@@ -122,6 +125,7 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+int             is_inode_open(struct inode*);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

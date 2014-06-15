@@ -7,6 +7,8 @@
 #include "proc.h"
 #include "spinlock.h"
 #include "signal.h"
+#include "fs.h"
+#include "file.h"
 
 struct {
   struct spinlock lock;
@@ -180,6 +182,8 @@ exit(void)
       proc->ofile[fd] = 0;
     }
   }
+
+  free_inode_locks(proc->pid);
 
   iput(proc->cwd);
   proc->cwd = 0;
@@ -474,4 +478,25 @@ procdump(void)
   }
 }
 
+int
+is_inode_open(struct inode* ip)
+{
+  int i;
+  struct proc *p;
 
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state != UNUSED){
+      for(i = 0; i < NOFILE; i++){
+        if(p->ofile[i]){
+          if(p->ofile[i]->type == FD_INODE && p->ofile[i]->ip->inum == ip->inum){
+            release(&ptable.lock);
+            return 1;
+          }
+        }
+      }
+    }
+  }
+  release(&ptable.lock);
+  return 0;
+}
