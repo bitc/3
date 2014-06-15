@@ -491,13 +491,19 @@ filesymlink(const char *oldpath, const char *newpath)
   struct inode *ip;
   int len;
 
+  char final_path[MAXPATH];
+
   // Verify that the target is not an empty filename:
   if(oldpath[0] == '\0'){
     return -1;
   }
 
+  if(filereadlinki(newpath, final_path, MAXPATH) < 0){
+    return -1;
+  }
+
   begin_trans();
-  ip = create((char*)newpath, T_SYMLINK, 0, 0);
+  ip = create(final_path, T_SYMLINK, 0, 0);
   if(ip == 0) {
     commit_trans();
     return -1;
