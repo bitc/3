@@ -165,6 +165,7 @@ UPROGS=\
 	_test_readlink\
 	_test_flock\
 	_test_flock2\
+	_find\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -239,6 +240,7 @@ EXTRA=\
 	test_readlink.c\
 	test_flock.c\
 	test_flock2.c\
+	find.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 
