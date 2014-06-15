@@ -228,6 +228,33 @@ is_inode_unlocked(struct inode* ip)
 }
 
 void
+fork_pids(int old_pid, int new_pid)
+{
+  int i, j, k;
+
+  acquire(&unlocked_inodes.lock);
+
+  for(i = 0; i < NINODES; i++){
+    for(j = 0; j < NPROC; j++){
+      if(unlocked_inodes.pids[i][j] == old_pid){
+        for(k = 0; k < NPROC; k++){
+          if(unlocked_inodes.pids[i][k] == 0){
+            unlocked_inodes.pids[i][k] = new_pid;
+            break;
+          }
+        }
+        if(k == NPROC){
+          panic("fork_pids: No free pid slots found");
+        }
+        break;
+      }
+    }
+  }
+
+  release(&unlocked_inodes.lock);
+}
+
+void
 iinit(void)
 {
   initlock(&icache.lock, "icache");

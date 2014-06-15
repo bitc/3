@@ -59,6 +59,7 @@ int             writei(struct inode*, char*, uint, uint);
 void            free_inode_locks(int pid);
 void            unlock_inode(struct inode* ip);
 int             is_inode_unlocked(struct inode* ip);
+void            fork_pids(int old_pid, int new_pid);
 
 // ide.c
 void            ideinit(void);
