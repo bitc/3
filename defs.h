@@ -33,6 +33,7 @@ int             filestat(struct file*, struct stat*);
 int             filewrite(struct file*, char*, int n);
 int             filesymlink(const char *oldpath, const char *newpath);
 int             filereadlink(const char *pathname, char *buf, int bufsiz);
+int             filereadlinki(const char *pathname, char *buf, int bufsiz);
 
 // fs.c
 void            readsb(int dev, struct superblock *sb);

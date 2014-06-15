@@ -813,3 +813,97 @@ restart:
     }
   }
 }
+
+// Same as filereadlink, but doesn't dereference the final path element
+int
+filereadlinki(const char *pathname, char *buf, int bufsiz)
+{
+  int loops_left = MAX_SYMLINK_LOOPS;
+  int l;
+
+  char name[DIRSIZ+1];
+  char result[MAXPATH];
+  int result_off;
+  char origpath[MAXPATH];
+  char *origpath_p;
+
+  struct inode* ip;
+
+  if(*pathname == '\0'){
+    return -1;
+  }
+
+  strncpy(origpath, pathname, MAXPATH);
+
+restart:
+  result_off = 0;
+
+  if(origpath[0] == '/'){
+    result[0] = '/';
+    result_off = 1;
+  }
+  result[result_off] = '\0';
+
+  origpath_p = origpath;
+
+  for(;;){
+    origpath_p = skipelem(origpath_p, name);
+    if(!origpath_p){
+      return -1;
+    }
+
+    if(*origpath_p == '\0'){
+      // Last element
+      // `name' contains the filename
+
+      safestrcpy(&result[result_off], name, MAXPATH);
+      result_off += strlen(name);
+      result[result_off] = '\0';
+
+      if(bufsiz < result_off + 1){
+        return -1;
+      } else {
+        safestrcpy(buf, result, MAXPATH);
+        return result_off;
+      }
+    } else {
+      safestrcpy(&result[result_off], name, MAXPATH);
+      result_off += strlen(name);
+      result[result_off] = '\0';
+
+      ip = namei(result);
+      if(!ip){
+        return -1;
+      }
+      ilock(ip);
+      if(ip->type == T_FILE || ip->type == T_DEV){
+        // Tried to traverse through a file/dev as if it was a directory
+        return -1;
+      } else if(ip->type == T_DIR) {
+        result[result_off] = '/';
+        result_off++;
+        result[result_off] = '\0';
+      } else if(ip->type == T_SYMLINK) {
+        result_off -= strlen(name);
+        l = readi(ip, &result[result_off], 0, MAXPATH);
+        iunlock(ip);
+        result[result_off+l] = '/';
+        safestrcpy(&result[result_off+l+1], origpath_p, MAXPATH);
+        if(result[result_off] == '/') {
+          // Absolute symlink
+          safestrcpy(origpath, &result[result_off], MAXPATH);
+        } else {
+          safestrcpy(origpath, result, MAXPATH);
+        }
+        loops_left--;
+        if(loops_left == 0){
+          return -1;
+        }
+        goto restart;
+      } else {
+        panic("filereadlink: unknown inode type");
+      }
+      iunlock(ip);
+    }
+  }
+}

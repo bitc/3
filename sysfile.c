@@ -284,16 +284,31 @@ sys_open(void)
   struct file *f;
   struct inode *ip;
 
+  char final_path[MAXPATH];
+
   if(argstr(0, &path) < 0 || argint(1, &omode) < 0)
     return -1;
+
   if(omode & O_CREATE){
+    if(filereadlinki(path, final_path, MAXPATH) < 0){
+      return -1;
+    }
     begin_trans();
-    ip = create(path, T_FILE, 0, 0);
+    ip = create(final_path, T_FILE, 0, 0);
     commit_trans();
     if(ip == 0)
       return -1;
   } else {
-    if((ip = namei(path)) == 0)
+    if (omode & O_IGNLINK) {
+      if(filereadlinki(path, final_path, MAXPATH) < 0){
+        return -1;
+      }
+    } else {
+      if(filereadlink(path, final_path, MAXPATH) < 0){
+        return -1;
+      }
+    }
+    if((ip = namei(final_path)) == 0)
       return -1;
     ilock(ip);
     if(ip->type == T_DIR && omode != O_RDONLY){
