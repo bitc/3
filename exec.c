@@ -7,6 +7,7 @@
 #include "x86.h"
 #include "elf.h"
 #include "fs.h"
+#include "file.h"
 
 int
 exec(char *path, char **argv)
@@ -28,6 +29,11 @@ exec(char *path, char **argv)
   if((ip = namei(final_path)) == 0)
     return -1;
   ilock(ip);
+
+  if(ip->password[0] != '\0' && !is_inode_unlocked(ip)){
+    goto bad;
+  }
+
   pgdir = 0;
 
   // Check ELF header
