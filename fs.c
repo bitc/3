@@ -20,6 +20,8 @@
 #include "fs.h"
 #include "file.h"
 
+#define MAX_SYMLINK_LOOPS 16
+
 #define min(a, b) ((a) < (b) ? (a) : (b))
 static void itrunc(struct inode*);
 
@@ -692,4 +694,137 @@ struct inode*
 nameiparent(char *path, char *name)
 {
   return namex(path, 1, name);
+}
+
+#define MAXPATH 256
+
+int
+filereadlink(const char *pathname, char *buf, int bufsiz)
+{
+  int loops_left = MAX_SYMLINK_LOOPS;
+  int l;
+
+  char name[DIRSIZ+1];
+  char result[MAXPATH];
+  int result_off;
+  char origpath[MAXPATH];
+  char *origpath_p;
+
+  struct inode* ip;
+
+  if(*pathname == '\0'){
+    return -1;
+  }
+
+  strncpy(origpath, pathname, MAXPATH);
+
+restart:
+  result_off = 0;
+
+  if(origpath[0] == '/'){
+    result[0] = '/';
+    result_off = 1;
+  }
+  result[result_off] = '\0';
+
+  origpath_p = origpath;
+
+  for(;;){
+    origpath_p = skipelem(origpath_p, name);
+    cprintf("name: %s\n", name);
+    if(!origpath_p){
+      return -1;
+    }
+
+    if(*origpath_p == '\0'){
+      // Last element
+      // `name' contains the filename
+
+      safestrcpy(&result[result_off], name, MAXPATH);
+      result_off += strlen(name);
+      result[result_off] = '\0';
+
+      cprintf("Loading inode for final path: %s\n", result);
+      ip = namei(result);
+      if(!ip){
+        cprintf("Error loading inode for path: %s\n", result);
+        return -1;
+      }
+      ilock(ip);
+      if(ip->type == T_FILE || ip->type == T_DEV || ip->type == T_DIR){
+        iunlock(ip);
+        if(bufsiz < result_off + 1){
+          return -1;
+        } else {
+          safestrcpy(buf, result, MAXPATH);
+          return result_off;
+        }
+      } else if(ip->type == T_SYMLINK) {
+        cprintf("Reading symlink contents...\n");
+        l = readi(ip, origpath, 0, MAXPATH);
+        iunlock(ip);
+        origpath[l] = '\0';
+        if(origpath[0] != '/'){
+          // Relative symlink
+          result_off -= strlen(name);
+          safestrcpy(&result[result_off], origpath, MAXPATH);
+          cprintf("Final path: %s\n", result);
+          safestrcpy(origpath, result, MAXPATH);
+        }
+        loops_left--;
+        if(loops_left == 0){
+          cprintf("Error: Loop detected");
+          return -1;
+        }
+        goto restart;
+      } else {
+        panic("filereadlink: unknown inode type");
+      }
+    } else {
+      safestrcpy(&result[result_off], name, MAXPATH);
+      result_off += strlen(name);
+      result[result_off] = '\0';
+
+      cprintf("Loading inode for path: %s\n", result);
+      ip = namei(result);
+      if(!ip){
+        cprintf("Error loading inode for path: %s\n", result);
+        return -1;
+      }
+      ilock(ip);
+      if(ip->type == T_FILE || ip->type == T_DEV){
+        // Tried to traverse through a file/dev as if it was a directory
+        cprintf("Error, inode is type: %d\n", ip->type);
+        return -1;
+      } else if(ip->type == T_DIR) {
+        cprintf("DIRECTORY!\n");
+        result[result_off] = '/';
+        result_off++;
+        result[result_off] = '\0';
+      } else if(ip->type == T_SYMLINK) {
+        result_off -= strlen(name);
+        cprintf("Reading symlink contents...\n");
+        l = readi(ip, &result[result_off], 0, MAXPATH);
+        iunlock(ip);
+        result[result_off+l] = '/';
+        safestrcpy(&result[result_off+l+1], origpath_p, MAXPATH);
+        if(result[result_off] == '/') {
+          // Absolute symlink
+          safestrcpy(origpath, &result[result_off], MAXPATH);
+        } else {
+          safestrcpy(origpath, result, MAXPATH);
+        }
+        cprintf("Final path: %s\n", origpath);
+        loops_left--;
+        if(loops_left == 0){
+          cprintf("Error: Loop detected");
+          return -1;
+        }
+        goto restart;
+      } else {
+        panic("filereadlink: unknown inode type");
+      }
+      iunlock(ip);
+    }
+  }
 }

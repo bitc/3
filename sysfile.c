@@ -450,3 +450,31 @@ sys_readlink(void)
 
   return filereadlink(pathname, buf, bufsiz);
 }
+
+int
+filesymlink(const char *oldpath, const char *newpath)
+{
+  struct inode *ip;
+  int len;
+
+  // Verify that the target is not an empty filename:
+  if(oldpath[0] == '\0'){
+    return -1;
+  }
+
+  begin_trans();
+  ip = create((char*)newpath, T_SYMLINK, 0, 0);
+  if(ip == 0) {
+    commit_trans();
+    return -1;
+  }
+  len = strlen(oldpath);
+  if(writei(ip, (char*)oldpath, 0, len) != len){
+    panic("filesymlink: writei");
+  }
+  iunlock(ip);
+  commit_trans();
+
+  return 0;
+}
+
