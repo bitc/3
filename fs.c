@@ -714,6 +714,12 @@ filereadlink(const char *pathname, char *buf, int bufsiz)
     return -1;
   }
 
+  if(pathname[0] == '/' && pathname[1] == '\0') {
+    buf[0] = '/';
+    buf[1] = '\0';
+    return 2;
+  }
+
   strncpy(origpath, pathname, MAXPATH);
 
 restart:
@@ -831,6 +837,12 @@ filereadlinki(const char *pathname, char *buf, int bufsiz)
 
   if(*pathname == '\0'){
     return -1;
+  }
+
+  if(pathname[0] == '/' && pathname[1] == '\0') {
+    buf[0] = '/';
+    buf[1] = '\0';
+    return 2;
   }
 
   strncpy(origpath, pathname, MAXPATH);
