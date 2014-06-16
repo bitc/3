@@ -31,12 +31,16 @@ void            fileinit(void);
 int             fileread(struct file*, char*, int n);
 int             filestat(struct file*, struct stat*);
 int             filewrite(struct file*, char*, int n);
+/*vvv  TASK 1.2  vvv*/
 int             filesymlink(const char *oldpath, const char *newpath);
 int             filereadlink(const char *pathname, char *buf, int bufsiz);
 int             filereadlinki(const char *pathname, char *buf, int bufsiz);
+/*^^^^^^^^^^^^^^^^^^*/
+/*vvv  TASK 2    vvv*/
 int             filefprot(const char *pathname, const char *password);
 int             filefunprot(const char *pathname, const char *password);
 int             filefunlock(const char *pathname, const char *password);
+/*^^^^^^^^^^^^^^^^^^*/
 
 // fs.c
 void            readsb(int dev, struct superblock *sb);
@@ -56,10 +60,12 @@ struct inode*   nameiparent(char*, char*);
 int             readi(struct inode*, char*, uint, uint);
 void            stati(struct inode*, struct stat*);
 int             writei(struct inode*, char*, uint, uint);
+/*vvv  TASK 2    vvv*/
 void            free_inode_locks(int pid);
 void            unlock_inode(struct inode* ip);
 int             is_inode_unlocked(struct inode* ip);
 void            fork_pids(int old_pid, int new_pid);
+/*^^^^^^^^^^^^^^^^^^*/
 
 // ide.c
 void            ideinit(void);
@@ -126,7 +132,9 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+/*vvv  TASK 2    vvv*/
 int             is_inode_open(struct inode*);
+/*^^^^^^^^^^^^^^^^^^*/
 
 // swtch.S
 void            swtch(struct context**, struct context*);

@@ -163,6 +163,10 @@ struct {
   struct inode inode[NINODE];
 } icache;
 
+/**************/
+/*** TASK 2 ***/
+/**************/
+
 #define NINODES 200
 
 struct {
@@ -258,7 +262,9 @@ void
 iinit(void)
 {
   initlock(&icache.lock, "icache");
+/*vvv  TASK 2    vvv*/
   initlock(&unlocked_inodes.lock, "unlocked_inodes");
+/*^^^^^^^^^^^^^^^^^^*/
 }
 
 static struct inode* iget(uint dev, uint inum);
@@ -306,8 +312,12 @@ iupdate(struct inode *ip)
   dip->nlink = ip->nlink;
   dip->size = ip->size;
   memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
+/*vvv  TASK 1.1  vvv*/
   dip->indirect2 = ip->indirect2;
+/*^^^^^^^^^^^^^^^^^^*/
+/*vvv  TASK 2    vvv*/
   memmove(dip->password, ip->password, sizeof(ip->password));
+/*^^^^^^^^^^^^^^^^^^*/
   log_write(bp);
   brelse(bp);
 }
@@ -385,8 +395,12 @@ ilock(struct inode *ip)
     ip->nlink = dip->nlink;
     ip->size = dip->size;
     memmove(ip->addrs, dip->addrs, sizeof(ip->addrs));
+/*vvv  TASK 1.1  vvv*/
     ip->indirect2 = dip->indirect2;
+/*^^^^^^^^^^^^^^^^^^*/
+/*vvv  TASK 2    vvv*/
     memmove(ip->password, dip->password, sizeof(ip->password));
+/*^^^^^^^^^^^^^^^^^^*/
     brelse(bp);
     ip->flags |= I_VALID;
     if(ip->type == 0)
@@ -477,6 +491,7 @@ bmap(struct inode *ip, uint bn)
     brelse(bp);
     return addr;
   }
+/*vvv  TASK 1.1  vvv*/
   bn -= NINDIRECT;
 
   if(bn < NINDIRECT * NINDIRECT){
@@ -500,6 +515,7 @@ bmap(struct inode *ip, uint bn)
     brelse(bp);
     return addr;
   }
+/*^^^^^^^^^^^^^^^^^^*/
 
   panic("bmap: out of range");
 }
@@ -535,6 +551,7 @@ itrunc(struct inode *ip)
     ip->addrs[NDIRECT] = 0;
   }
 
+/*vvv  TASK 1.1  vvv*/
   if(ip->indirect2){
     bp = bread(ip->dev, ip->indirect2);
     a = (uint*)bp->data;
@@ -554,6 +571,7 @@ itrunc(struct inode *ip)
     bfree(ip->dev, ip->indirect2);
     ip->indirect2 = 0;
   }
+/*^^^^^^^^^^^^^^^^^^*/
 
   ip->size = 0;
   iupdate(ip);
@@ -789,6 +807,10 @@ nameiparent(char *path, char *name)
 {
   return namex(path, 1, name);
 }
+
+/****************/
+/*** TASK 1.2 ***/
+/****************/
 
 int
 filereadlink(const char *pathname, char *buf, int bufsiz)

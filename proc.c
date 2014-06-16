@@ -149,7 +149,9 @@ fork(void)
   np->parent = proc;
   *np->tf = *proc->tf;
 
+/*vvv  TASK 2    vvv*/
   fork_pids(proc->pid, np->pid);
+/*^^^^^^^^^^^^^^^^^^*/
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
@@ -185,7 +187,9 @@ exit(void)
     }
   }
 
+/*vvv  TASK 2    vvv*/
   free_inode_locks(proc->pid);
+/*^^^^^^^^^^^^^^^^^^*/
 
   iput(proc->cwd);
   proc->cwd = 0;
@@ -480,6 +484,7 @@ procdump(void)
   }
 }
 
+/*vvv  TASK 2    vvv*/
 int
 is_inode_open(struct inode* ip)
 {
@@ -502,3 +507,4 @@ is_inode_open(struct inode* ip)
   release(&ptable.lock);
   return 0;
 }
+/*^^^^^^^^^^^^^^^^^^*/

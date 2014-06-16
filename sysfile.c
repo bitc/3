@@ -245,10 +245,12 @@ create(char *path, short type, short major, short minor)
   if((ip = dirlookup(dp, name, &off)) != 0){
     iunlockput(dp);
     ilock(ip);
+/*vvv  TASK 2    vvv*/
     if(ip->password[0] != '\0' && !is_inode_unlocked(ip)){
       iunlockput(ip);
       return 0;
     }
+/*^^^^^^^^^^^^^^^^^^*/
     if(type == T_FILE && ip->type == T_FILE)
       return ip;
     iunlockput(ip);
@@ -294,15 +296,20 @@ sys_open(void)
     return -1;
 
   if(omode & O_CREATE){
+/*vvv  TASK 1.2  vvv*/
     if(filereadlinki(path, final_path, MAXPATH) < 0){
       return -1;
     }
+/*^^^^^^^^^^^^^^^^^^*/
     begin_trans();
+/*vvv  TASK 1.2  vvv*/
     ip = create(final_path, T_FILE, 0, 0);
+/*^^^^^^^^^^^^^^^^^^*/
     commit_trans();
     if(ip == 0)
       return -1;
   } else {
+/*vvv  TASK 1.2  vvv*/
     if (omode & O_IGNLINK) {
       if(filereadlinki(path, final_path, MAXPATH) < 0){
         return -1;
@@ -312,14 +319,19 @@ sys_open(void)
         return -1;
       }
     }
+/*^^^^^^^^^^^^^^^^^^*/
     if((ip = namei(final_path)) == 0)
       return -1;
     ilock(ip);
+/*vvv  TASK 2    vvv*/
     if(ip->password[0] != '\0' && !is_inode_unlocked(ip)){
       iunlockput(ip);
       return -1;
     }
+/*^^^^^^^^^^^^^^^^^^*/
+/*vvv  TASK 1.2  vvv*/
     if(ip->type == T_DIR && (omode & O_WRONLY || omode & O_RDWR)){
+/*^^^^^^^^^^^^^^^^^^*/
       iunlockput(ip);
       return -1;
     }
@@ -389,6 +401,7 @@ sys_chdir(void)
   if(argstr(0, &path) < 0)
     return -1;
 
+/*vvv  TASK 1.2  vvv*/
   if(filereadlink(path, final_path, MAXPATH) < 0){
     return -1;
   }
@@ -396,6 +409,7 @@ sys_chdir(void)
   if((ip = namei(final_path)) == 0){
     return -1;
   }
+/*^^^^^^^^^^^^^^^^^^*/
 
   ilock(ip);
   if(ip->type != T_DIR){
@@ -458,6 +472,10 @@ sys_pipe(void)
   return 0;
 }
 
+/****************/
+/*** TASK 1.2 ***/
+/****************/
+
 int
 sys_symlink(void)
 {
@@ -517,6 +535,10 @@ filesymlink(const char *oldpath, const char *newpath)
 
   return 0;
 }
+
+/**************/
+/*** TASK 2 ***/
+/**************/
 
 int sys_fprot(void)
 {

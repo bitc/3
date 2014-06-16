@@ -11,10 +11,14 @@
 #include "stat.h"
 #include "param.h"
 
+/*vvv  TASK 1.1  vvv*/
 int nblocks = 32768 - 62 - LOGSIZE;
+/*^^^^^^^^^^^^^^^^^^*/
 int nlog = LOGSIZE;
 int ninodes = 200;
+/*vvv  TASK 1.1  vvv*/
 int size = 32768;
+/*^^^^^^^^^^^^^^^^^^*/
 
 int fsfd;
 struct superblock sb;

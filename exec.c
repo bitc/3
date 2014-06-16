@@ -20,6 +20,7 @@ exec(char *path, char **argv)
   struct proghdr ph;
   pde_t *pgdir, *oldpgdir;
 
+/*vvv  TASK 1.2  vvv*/
   char final_path[MAXPATH];
 
   if(filereadlink(path, final_path, MAXPATH) < 0){
@@ -28,11 +29,14 @@ exec(char *path, char **argv)
 
   if((ip = namei(final_path)) == 0)
     return -1;
+/*^^^^^^^^^^^^^^^^^^*/
   ilock(ip);
 
+/*vvv  TASK 2    vvv*/
   if(ip->password[0] != '\0' && !is_inode_unlocked(ip)){
     goto bad;
   }
+/*^^^^^^^^^^^^^^^^^^*/
 
   pgdir = 0;
 

@@ -23,6 +23,8 @@ fmtname(char *path)
   return buf;
 }
 
+
+/*vvv  TASK 1.2  vvv*/
 static int
 stat2(char *n, struct stat *st)
 {
@@ -36,6 +38,7 @@ stat2(char *n, struct stat *st)
   close(fd);
   return r;
 }
+/*^^^^^^^^^^^^^^^^^^*/
 
 void
 ls(char *path)
@@ -74,7 +77,9 @@ ls(char *path)
         continue;
       memmove(p, de.name, DIRSIZ);
       p[DIRSIZ] = 0;
+/*vvv  TASK 1.2  vvv*/
       if(stat2(buf, &st) < 0){
+/*^^^^^^^^^^^^^^^^^^*/
         printf(1, "ls: cannot stat %s\n", buf);
         continue;
       }

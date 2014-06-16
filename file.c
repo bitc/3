@@ -155,6 +155,10 @@ filewrite(struct file *f, char *addr, int n)
   panic("filewrite");
 }
 
+/**************/
+/*** TASK 2 ***/
+/**************/
+
 int
 filefprot(const char *pathname, const char *password)
 {
