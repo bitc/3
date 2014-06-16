@@ -1,5 +1,8 @@
 #include "types.h"
 #include "user.h"
+#include "fcntl.h"
+#include "stat.h"
+#include "fs.h"
 
 struct {
   int follow;                                         // boolean: 0 or 1
@@ -19,10 +22,147 @@ set_default_search_options(void)
   search_options.max_size = 0xFFFFFFFF;
 }
 
-static void
-search(const char* path)
+static char*
+basename(char *path)
 {
-  // TODO ...
+  char *p;
+
+  // Find first character after last slash.
+  for(p=path+strlen(path); p >= path && *p != '/'; p--)
+    ;
+  p++;
+  return p;
+}
+
+static void
+search(char *path, int following_symlink)
+{
+  int fd;
+  struct stat st;
+  int skip = 0;
+  struct dirent de;
+  int cur_entry, i;
+  char buf[MAXPATH];
+  char *p;
+
+  fd = open(path, following_symlink ? 0 : O_IGNLINK);
+
+  if(fd < 0 && following_symlink){
+    // Error opening symlink or broken symlink. Ignore it
+    return;
+  }
+
+  if(fd < 0) {
+    printf(1, "Error opening file: %s\n", path);
+    exit();
+  }
+
+  if(fstat(fd, &st) < 0){
+    printf(1, "Error fstat file: %s\n", path);
+    exit();
+  }
+
+  close(fd);
+
+  switch(st.type){
+    case T_DIR:
+      if(!skip && search_options.name_exact && strcmp(basename(path), search_options.name_exact) != 0){
+        skip = 1;
+      }
+      if(!skip && !(search_options.type == FT_ANY || search_options.type == FT_DIR)){
+        skip = 1;
+      }
+      if(!skip && !(st.size >= search_options.min_size && st.size <= search_options.max_size)){
+        skip = 1;
+      }
+
+      if(!skip){
+        printf(1, "%s\n", path);
+      }
+
+      strcpy(buf, path);
+      p = buf + strlen(path);
+      if(strcmp(path, "/") != 0){ // Handle special case of root directory
+        *p = '/';
+        p++;
+      }
+
+      cur_entry = 0;
+      for(;;){
+        fd = open(path, following_symlink ? 0 : O_IGNLINK);
+        if(fd < 0) {
+          printf(1, "Error opening file: %s\n", path);
+          exit();
+        }
+        // Not possible to seek through files, so use read to skip forward
+        for(i = 0; i < cur_entry - 1; i++){
+          read(fd, &de, sizeof(de));
+        }
+        if(read(fd, &de, sizeof(de)) == sizeof(de)){
+          close(fd);
+          if(de.inum != 0 && strcmp(de.name, ".") != 0 && strcmp(de.name, "..") != 0){
+            memmove(p, de.name, DIRSIZ);
+            p[DIRSIZ] = '\0';
+
+            search(buf, 0);
+          }
+        } else {
+          close(fd);
+          break;
+        }
+        cur_entry++;
+      }
+      return;
+    case T_FILE:
+      if(!skip && search_options.name_exact && strcmp(basename(path), search_options.name_exact) != 0){
+        skip = 1;
+      }
+      if(!skip && !(search_options.type == FT_ANY || search_options.type == FT_FILE)){
+        skip = 1;
+      }
+      if(!skip && !(st.size >= search_options.min_size && st.size <= search_options.max_size)){
+        skip = 1;
+      }
+
+      if(!skip){
+        printf(1, "%s\n", path);
+      }
+      return;
+    case T_DEV:
+      if(!skip && search_options.name_exact && strcmp(basename(path), search_options.name_exact) != 0){
+        skip = 1;
+      }
+      if(!skip && search_options.type != FT_ANY){
+        skip = 1;
+      }
+      if(!skip && !(st.size >= search_options.min_size && st.size <= search_options.max_size)){
+        skip = 1;
+      }
+
+      if(!skip){
+        printf(1, "%s\n", path);
+      }
+      return;
+    case T_SYMLINK:
+      if(search_options.follow){
+        search(path, 1);
+      } else {
+        if(!skip && search_options.name_exact && strcmp(basename(path), search_options.name_exact) != 0){
+          skip = 1;
+        }
+        if(!skip && !(search_options.type == FT_ANY || search_options.type == FT_SYMLINK)){
+          skip = 1;
+        }
+        if(!skip && !(st.size >= search_options.min_size && st.size <= search_options.max_size)){
+          skip = 1;
+        }
+
+        if(!skip){
+          printf(1, "%s\n", path);
+        }
+      }
+      return;
+  }
 }
 
 static void
@@ -155,7 +295,7 @@ main(int argc, char *argv[])
     print_search_options();
   }
 
-  search(path);
+  search(path, 0);
 
   exit();
 }
